@@ -445,27 +445,27 @@ for data in datas:
         print('magic number = ', magic_number)
         
         # 1. check if the open position exist for the pair
-        broker1.get_count2(magic_number, [data.x1_symbol,data.x2_symbol])
-        print('trade count = ', broker1.trade_count)
+        slave.get_count2(magic_number, [data.x1_symbol,data.x2_symbol])
+        print('trade count = ', slave.trade_count)
         
         # 2. if dont exist then open new position
-        if broker1.trade_count[0] == 0 and broker1.trade_count[1] == 0:
-            broker1.get_price([data.x1_symbol, data.x2_symbol])
+        if slave.trade_count[0] == 0 and slave.trade_count[1] == 0:
+            slave.get_price([data.x1_symbol, data.x2_symbol])
             
             if data.x1_signal == trade_type.BUY:
-                price_x1 = broker1.ask[0]
-                price_x2 = broker1.bid[1]
+                price_x1 = slave.ask[0]
+                price_x2 = slave.bid[1]
             elif data.x1_signal == trade_type.SELL:
-                price_x1 = broker1.bid[0]
-                price_x2 = broker1.ask[1]
+                price_x1 = slave.bid[0]
+                price_x2 = slave.ask[1]
                 
             
-            broker1.send_order2(magic_number, data.x1_signal, data.x1_symbol, price_x1)
-            broker1.send_order2(magic_number, data.x2_signal, data.x2_symbol, price_x2)
+            slave.send_order2(magic_number, data.x1_signal, data.x1_symbol, price_x1)
+            slave.send_order2(magic_number, data.x2_signal, data.x2_symbol, price_x2)
             
     
 #3. if open position, check magic number
-magic_numbers = broker1.get_opmagicnum()       
+magic_numbers = slave.get_opmagicnum()       
 print('magic numbers are/ is ',magic_numbers)
 
 profit_threshold = -1.00
@@ -474,12 +474,12 @@ loss_threshold = -1.00
 for magic_number in magic_numbers:
     
     #4. if exist check profit / loss
-    profit = broker1.get_profit_by_Magic_Num(magic_number)
+    profit = slave.get_profit_by_Magic_Num(magic_number)
     print('Profit for {:6d} = {:3.2f}'.format(magic_number, profit))
 
     #5. if profit > 200 pip / loss > 200 pip then close position
     if profit > profit_threshold or profit < loss_threshold:
-        broker1.order_close_by_magicnumber(magic_number)
+        slave.order_close_by_magicnumber(magic_number)
     
     
         

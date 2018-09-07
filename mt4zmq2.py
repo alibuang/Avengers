@@ -314,6 +314,26 @@ class broker_class:
                 self.profit[i] = int(float(quote[i+1]))
 
         print (self.profit)
+        
+    def get_profit_by_Magic_Num(self, magic_number):
+
+#        self.profit =[]
+
+        req_count = "PROFIT_MAGIC|"+ str(magic_number)
+
+#        print (req_count)
+        self.remote_send(self.req_socket, req_count)
+        msg = self.remote_pull(self.pull_socket)
+
+#        print (msg)
+
+        if msg is not None:
+            quote = msg.split('|')
+            header = quote[0]
+            profit = float(quote[1])
+        
+#        print(quote)    
+        return profit
 
 
 
@@ -358,6 +378,17 @@ class broker_class:
         # sys.exit()
 
         self.remote_send(self.req_socket, close_order)
+
+    def order_close_by_magicnumber(self, magic_number):
+
+        # format 'TRADE|CLOSE|magicnumber|symbol1, symbol2, ..'
+        close_order = 'CLOSE_MAGICNUM|'+ str(magic_number) 
+
+        print(close_order)
+        # sys.exit()
+
+        self.remote_send(self.req_socket, close_order)
+        
 
     def get_zmq_ver(self):
 
@@ -436,12 +467,17 @@ class broker_class:
         msg = self.remote_pull(self.pull_socket)
 
         # msg = 'COUNT|1|2|3|4|5|6'
-        print('return msg for magic number = ', msg)
+#        print('return msg for magic number = ', msg)
 
+        magic_numbers = []
+        
         if msg is not None:
             quote = msg.split('|')
-#            for i in range(len(symbols)):
-#                # print i, '\t', quote[i + 1]
-#                self.trade_count[i] = int(float(quote[i+1]))
+            header = quote[0]
+            data = quote[1:]
+            
+            for d in data:
+                magic_numbers.append(int(d))
+                
 #
-#            # print self.trade_count
+        return magic_numbers

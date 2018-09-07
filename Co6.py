@@ -50,9 +50,9 @@ class Spread:
     x1_symbol = None
     x2_symbol = None
     
-def get_data(symbols, total_candle, tf):
+def get_data(broker, symbols, total_candle, tf):
 
-    ohlc = broker1.get_OHLC(symbols, tf , 1)
+    ohlc = broker.get_OHLC(symbols, tf , 1)
     
     df = []
     for i in range(len(symbols)):
@@ -60,7 +60,7 @@ def get_data(symbols, total_candle, tf):
     
     for cnt in range(total_candle, 0, -1):        
         print(cnt)           
-        ohlc = broker1.get_OHLC(symbols, tf , cnt)
+        ohlc = broker.get_OHLC(symbols, tf , cnt)
            
         for i in range(len(symbols)): 
             data = [ohlc[i].timestamp, ohlc[i].symbol, ohlc[i].open, ohlc[i].high, ohlc[i].low, ohlc[i].close]
@@ -109,8 +109,8 @@ def get_Spread( index, filtTime_df):
 #    tms = pd.Series( filtTime_df[pair_index_1].dt_MY)
 #    print(X1, X2)
     
-    X1.name = symb[index[0]]
-    X2.name = symb[index[1]]
+    X1.name = pairs[index[0]]
+    X2.name = pairs[index[1]]
     
     #reindex X1 and X2
     x1 = X1.reset_index()
@@ -125,12 +125,12 @@ def get_Spread( index, filtTime_df):
     results = sm.OLS(x2, x1).fit()
     
     # remove constant column
-    x1 = x1[symb[index[0]]]
-    x2 = x2[symb[index[1]]]
+    x1 = x1[pairs[index[0]]]
+    x2 = x2[pairs[index[1]]]
     
     #results.params
     
-    b = results.params[symb[index[0]]]
+    b = results.params[pairs[index[0]]]
     Z = x2 - b * x1
     Z.name = 'Spread'
     
@@ -197,7 +197,7 @@ def Data_Cleaning(price_df):
         else:
             temp_df = pd.DataFrame(df.close)
             
-        temp_df.rename(columns={'close':df.iloc[0].symbol}, inplace=True)
+        temp_df.rename(columns={'close':df.iloc[0].symbol[:6]}, inplace=True)
         close_df = close_df.join(temp_df, how='outer')
         
     return close_df
@@ -320,8 +320,8 @@ def ZPlot_Graph(data):
     plt.axhline(-1.0, color='green', linestyle='--')
     plt.axhline(-2.0, color='green', linestyle='--')
     plt.legend(['Spread z-score', 'Mean', '+1', '-1'])
-    plt.title(' between pairs ' + symb[data.i1] + ' and ' + symb[data.i2])
-    imageFile = symb[data.i1] + ' - ' + symb[data.i2]
+    plt.title(' between pairs ' + pairs[data.i1] + ' and ' + pairs[data.i2])
+    imageFile = pairs[data.i1] + ' - ' + pairs[data.i2]
     plt.savefig( graph_dir +'\\' +imageFile +'_Z.png')
     
 #    plt.show()           
@@ -332,8 +332,8 @@ def SpreadPlot_Graph(data):
     #plot the z-scores
     data.Z.plot()
     plt.axhline(data.Z.mean(), color='black')
-    plt.title(' between pairs ' + symb[data.i1] + ' and ' + symb[data.i2])
-    imageFile = symb[data.i1] + ' - ' + symb[data.i2]
+    plt.title(' between pairs ' + pairs[data.i1] + ' and ' + pairs[data.i2])
+    imageFile = pairs[data.i1] + ' - ' + pairs[data.i2]
     plt.savefig( graph_dir +'\\' +imageFile +'_Spread.png')
     
 #    plt.show()           
@@ -349,16 +349,26 @@ def zscore(series):
 '''
 
 #initialization ***************************************************************
-total_c = 7000
+total_c = 4000
 timeframe = timeframe.M15
 time = session.ALL
 
 start_date ='2018-01-01'
 end_date = '2018-12-31'
     
-symb = ['EURUSD.','GBPUSD.','AUDUSD.', 'USDJPY.', 'NZDUSD.','USDCAD.','USDCHF.'\
-        ,'GBPJPY.','EURJPY.','AUDJPY.', 'NZDJPY.', 'CADJPY.', 'CHFJPY.']
+pairs = ['EURUSD','GBPUSD','AUDUSD', 'USDJPY', 'NZDUSD','USDCAD','USDCHF'\
+        ,'GBPJPY','EURJPY','AUDJPY', 'NZDJPY', 'CADJPY', 'CHFJPY']
+suffixs = ['.lmx', '.']
 
+
+
+symbols = []
+for suffix in suffixs:
+    symbol = []
+    for pair in pairs:
+        symbol.append(pair+suffix)
+    symbols.append(symbol)
+        
 graph_dir = 'graph'
 if not os.path.exists(graph_dir):
     os.makedirs(graph_dir)
@@ -371,11 +381,18 @@ if not os.path.exists(data_dir):
 # Broker
 ip_add_1 = '127.0.0.100'
 ip_1 = 'tcp://'+ ip_add_1
+ip_add_2 = '127.0.0.101'
+ip_2 = 'tcp://'+ ip_add_2
 magic_number = 123456
 
-broker1 = bk(ip_1, magic_number)
-broker1.get_acct_info()
-print(broker1.company)
+master = bk(ip_1, magic_number)
+master.get_acct_info()
+slave = bk(ip_2, magic_number)
+slave.get_acct_info()
+
+print(master.company,'\n',slave.company)
+
+
 
 # Telegram
 token='488376978:AAFvFovR-Zin9VXR-AhCs0RRXXP149s_rdk'
@@ -390,7 +407,7 @@ chat_id=-1001175571059
 
 # logic begin here ************************************************************
 '''
-dfs = get_data(symb, total_c, timeframe)
+dfs = get_data(master, symbols[0], total_c, timeframe)
 
 #convert datetime to local datetime
 local_tz = timezone('Asia/Kuala_Lumpur')
@@ -402,21 +419,20 @@ for df in dfs:
 
 closed_df = Data_Cleaning(dfs)
 closed_df.to_csv(data_dir + '//' +'forex_data.csv', index=False)
-
-
-
+'''
 import sys
 sys.exit()
 
-'''
+
+
 # Read data from csv file
 df = pd.read_csv(data_dir + '//' +'forex_data.csv')
 
+
 new_df = Filter_datetime( start_date, end_date, time, df)
-datas = Prepare_Data(new_df, symb)
+datas = Prepare_Data(new_df, pairs)
 
-
-print('trade count ',broker1.trade_count)
+print('trade count ', slave.trade_count)
 for data in datas:
     data = Analyze_Data(data)
     
@@ -447,22 +463,26 @@ for data in datas:
             broker1.send_order2(magic_number, data.x1_signal, data.x1_symbol, price_x1)
             broker1.send_order2(magic_number, data.x2_signal, data.x2_symbol, price_x2)
             
-        
-        
-        
-        
-        
-        
-
+    
 #3. if open position, check magic number
-        
-#4. if exist check profit / loss
-        
-#5. if profit > 200 pip / loss > 200 pip then close position
+magic_numbers = broker1.get_opmagicnum()       
+print('magic numbers are/ is ',magic_numbers)
+
+profit_threshold = -1.00
+loss_threshold = -1.00
+
+for magic_number in magic_numbers:
+    
+    #4. if exist check profit / loss
+    profit = broker1.get_profit_by_Magic_Num(magic_number)
+    print('Profit for {:6d} = {:3.2f}'.format(magic_number, profit))
+
+    #5. if profit > 200 pip / loss > 200 pip then close position
+    if profit > profit_threshold or profit < loss_threshold:
+        broker1.order_close_by_magicnumber(magic_number)
+    
+    
         
 
-#def Check_OP(symbols, magic_number:
-#    
-#    broker1.get_order_status(symbols)
     
     

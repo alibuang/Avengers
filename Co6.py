@@ -283,8 +283,8 @@ def Analyze_Data( data):
 #    if pvalue < 0.05 and data.b > 0 and stationary:
         
         data.trade_signal = True
-        data.x1_symbol = symb[data.i1]
-        data.x2_symbol = symb[data.i2]
+        data.x1_symbol = symbols[1][data.i1]
+        data.x2_symbol = symbols[1][data.i2]
         
         if zscore(data.Z).iloc[-1] > 0:
             data.x1_signal = trade_type.BUY
@@ -419,11 +419,11 @@ for df in dfs:
 
 closed_df = Data_Cleaning(dfs)
 closed_df.to_csv(data_dir + '//' +'forex_data.csv', index=False)
-'''
+
 import sys
 sys.exit()
 
-
+'''
 
 # Read data from csv file
 df = pd.read_csv(data_dir + '//' +'forex_data.csv')
@@ -468,8 +468,8 @@ for data in datas:
 magic_numbers = slave.get_opmagicnum()       
 print('magic numbers are/ is ',magic_numbers)
 
-profit_threshold = -1.00
-loss_threshold = -1.00
+profit_threshold = 1.00
+loss_threshold = -0.50
 
 for magic_number in magic_numbers:
     

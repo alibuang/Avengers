@@ -325,12 +325,14 @@ class broker_class:
         self.remote_send(self.req_socket, req_count)
         msg = self.remote_pull(self.pull_socket)
 
-#        print (msg)
+        print (req_count, msg)
 
+        profit = 0
         if msg is not None:
             quote = msg.split('|')
             header = quote[0]
-            profit = float(quote[1])
+            if len(quote) > 1:
+                profit = float(quote[1])
         
 #        print(quote)    
         return profit
@@ -467,17 +469,18 @@ class broker_class:
         msg = self.remote_pull(self.pull_socket)
 
         # msg = 'COUNT|1|2|3|4|5|6'
-#        print('return msg for magic number = ', msg)
+        print('return msg for magic number = ', msg)
 
         magic_numbers = []
         
         if msg is not None:
             quote = msg.split('|')
             header = quote[0]
-            data = quote[1:]
+            if len(quote) > 1:
+                data = quote[1:]
             
-            for d in data:
-                magic_numbers.append(int(d))
+                for d in data:
+                    magic_numbers.append(int(d))
                 
 #
         return magic_numbers

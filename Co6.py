@@ -58,7 +58,7 @@ def get_data(broker, symbols, total_candle, tf):
     for i in range(len(symbols)):
         df.append(pd.DataFrame(columns = ['datetime', 'symbol','open','high','low','close']))
     
-    for cnt in range(total_candle, 0, -1):        
+    for cnt in range(total_candle, -1, -1):        
         print(cnt)           
         ohlc = broker.get_OHLC(symbols, tf , cnt)
            
@@ -201,6 +201,32 @@ def Data_Cleaning(price_df):
         close_df = close_df.join(temp_df, how='outer')
         
     return close_df
+
+'''
+*******************************************************************************
+This function is to save all data to database for future use.
+input parameter :
+    dataframe
+*******************************************************************************
+'''
+def SaveData2DB(price_df, timeframe):
+    
+#    price =[]
+    for df in price_df:  
+        
+        symbol = df.iloc[0]['symbol'][:6]
+        for row in range(len(df)):
+            prices = df.loc[row,['open', 'high','low', 'close']].tolist()
+            datetimes = df.loc[row,['datetime','dt_MY']].tolist()
+            
+#            print(symbol, datetimes, prices )
+        
+            db.save2db(database, timeframe, datetimes, symbol, prices)
+
+    return 
+
+
+
 
 '''
 *******************************************************************************
@@ -349,7 +375,7 @@ def zscore(series):
 '''
 
 #initialization ***************************************************************
-total_c = 4000
+total_c = 8000
 timeframe = timeframe.M15
 time = session.ALL
 
@@ -378,6 +404,13 @@ if not os.path.exists(data_dir):
     os.makedirs(data_dir)
 
 
+#------------------------ write to database -------------
+db_dir = 'database'
+database = db_dir + '\\' + 'avengers.db'
+
+if not os.path.exists(db_dir):
+    os.makedirs(db_dir)
+
 # Broker
 ip_add_1 = '127.0.0.100'
 ip_1 = 'tcp://'+ ip_add_1
@@ -389,6 +422,9 @@ master = bk(ip_1, magic_number)
 master.get_acct_info()
 slave = bk(ip_2, magic_number)
 slave.get_acct_info()
+
+master.init_symbol(symbols[0])
+slave.init_symbol(symbols[1])
 
 print(master.company,'\n',slave.company)
 
@@ -406,7 +442,7 @@ chat_id=-1001175571059
 
 
 # logic begin here ************************************************************
-'''
+
 dfs = get_data(master, symbols[0], total_c, timeframe)
 
 #convert datetime to local datetime
@@ -420,10 +456,17 @@ for df in dfs:
 closed_df = Data_Cleaning(dfs)
 closed_df.to_csv(data_dir + '//' +'forex_data.csv', index=False)
 
+
+
+
+import avengersdb2 as db
+SaveData2DB(dfs, timeframe)
+print(' The End ...............................')
+
 import sys
 sys.exit()
+#db.save2db(database)
 
-'''
 
 # Read data from csv file
 df = pd.read_csv(data_dir + '//' +'forex_data.csv')
